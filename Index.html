@@ -1,46 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>M-Core Emulator</title>
     <meta charset="UTF-8">
+    <title>Web Emulator</title>
     <style>
-        body { 
-            background: #1a1a1a; 
-            color: #eee; 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            margin: 0; 
-            padding: 20px;
-        }
-        #screen { 
-            border: 2px solid #444; 
-            margin: 20px auto; 
-            background: #000;
-            width: 800px;
-            height: 600px;
-        }
-        .btn { 
-            background: #0078d7; 
-            color: #fff; 
-            padding: 12px 20px; 
-            margin: 8px; 
-            border: none;
-            cursor: pointer; 
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .btn:hover { background: #106ebe; }
-        input[type=file] { display: none; }
-        .file-label {
-            background: #333; 
-            color: #fff; 
-            padding: 12px 20px; 
-            margin: 8px; 
-            border-radius: 4px;
-            cursor: pointer; 
-            display: inline-block;
-        }
+        body { background: #111; color: #fff; font-family: Arial; text-align: center; }
+        #screen_container { border: 1px solid #555; margin: 20px auto; background: #000; min-height: 400px; }
+      .controls { margin: 15px; }
+        button { padding: 10px 20px; font-size: 16px; }
+        #log { color: #f55; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1
+    <h2>Web Emulator</h2>
+    <div class="controls">
+        <input type="file" id="cdrom"> CD/ISO<br><br>
+        <button onclick="start()">Start</button>
+        <div id="log"></div>
+    </div>
+    <div id="screen_container">
+        <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+        <canvas style="display: none"></canvas>
+    </div>
+
+    <script src="https://copy.sh/v86/build/libv86.js"></script>
+    <script>
+        function log(msg) {
+            document.getElementById("log").innerText = msg;
+        }
+
+        function start() {
+            const cdrom_file = document.getElementById("cdrom").files[0];
+            if (!cdrom_file) {
+                log("Error: اختار ملف ISO الأول");
+                return;
+            }
+            if (location.protocol === "file:" || location.protocol === "content:") {
+                log("Error: لازم ترفع الموقع على سيرفر. مش هيشتغل من الموبايل مباشر");
+                return;
+            }
+
+            log("Starting emulator... استنى شوية");
+
+            window.emulator = new V86Starter({
+                wasm_path: "https://copy.sh/v86/build/v86.wasm",
+                memory_size: 512 * 1024,
+                vga_memory_size: 8 * 1024 * 1024,
+                screen_container: document.getElementById("screen_container"),
+                bios: { url: "https://copy.sh/v86/bios/seabios.bin" },
+                cdrom: { buffer: cdrom_file },
+                autostart: true,
+            });
+
+            emulator.add_listener("emulator-ready", function() {
+                log("Emulator ready. Booting...");
+            });
+            emulator.add_listener("emulator-error", function(e) {
+                log("Error: " + e.message);
+            });
+        }
+    </script>
+</body>
+</html>
